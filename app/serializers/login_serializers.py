@@ -42,59 +42,59 @@ class LoginSerializer(serializers.Serializer):
 
 
 
-
-class TeacherCreateSerializer(serializers.ModelSerializer):
-    phone_number = serializers.CharField(write_only=True)
-    password = serializers.CharField(write_only=True)
-    full_name = serializers.CharField(write_only=True, required=False)
-
-    class Meta:
-        model = Teacher
-        fields = ['departments', 'course', 'descriptions', 'phone_number', 'password', 'full_name']
-
-    def validate_phone_number(self, value):
-        if User.objects.filter(phone_number=value).exists():
-            raise serializers.ValidationError("Ushbu telefon raqam allaqachon ro'yxatdan o'tgan")
-        return value
-# ===============================================
-    def create(self, validated_data):
-        try:
-            with transaction.atomic():
-                # User yaratish
-                user_data = {
-                    'phone_number': validated_data.pop('phone_number'),
-                    'password': validated_data.pop('password'),
-                    'full_name': validated_data.pop('full_name', ''),
-                    'is_teacher': True
-                }
-
-                user = User.objects.create_user(**user_data)
-
-                # Teacher yaratish
-                departments = validated_data.pop('departments', [])
-                courses = validated_data.pop('course', [])
-
-                teacher = Teacher.objects.create(user=user, **validated_data)
-
-                # ManyToMany maydonlarini sozlash
-                teacher.departments.set(departments)
-                teacher.course.set(courses)
-
-                return teacher
-
-        except Exception as e:
-            raise serializers.ValidationError(str(e))
-
-
-
-# ========================================
-
-
-
-
-
-
-
+#
+# class TeacherCreateSerializer(serializers.ModelSerializer):
+#     phone_number = serializers.CharField(write_only=True)
+#     password = serializers.CharField(write_only=True)
+#     full_name = serializers.CharField(write_only=True, required=False)
+#
+#     class Meta:
+#         model = Teacher
+#         fields = ['departments', 'course', 'descriptions', 'phone_number', 'password', 'full_name']
+#
+#     def validate_phone_number(self, value):
+#         if User.objects.filter(phone_number=value).exists():
+#             raise serializers.ValidationError("Ushbu telefon raqam allaqachon ro'yxatdan o'tgan")
+#         return value
+# # ===============================================
+#     def create(self, validated_data):
+#         try:
+#             with transaction.atomic():
+#                 # User yaratish
+#                 user_data = {
+#                     'phone_number': validated_data.pop('phone_number'),
+#                     'password': validated_data.pop('password'),
+#                     'full_name': validated_data.pop('full_name', ''),
+#                     'is_teacher': True
+#                 }
+#
+#                 user = User.objects.create_user(**user_data)
+#
+#                 # Teacher yaratish
+#                 departments = validated_data.pop('departments', [])
+#                 courses = validated_data.pop('course', [])
+#
+#                 teacher = Teacher.objects.create(user=user, **validated_data)
+#
+#                 # ManyToMany maydonlarini sozlash
+#                 teacher.departments.set(departments)
+#                 teacher.course.set(courses)
+#
+#                 return teacher
+#
+#         except Exception as e:
+#             raise serializers.ValidationError(str(e))
+#
+#
+#
+# # ========================================
+#
+#
+#
+#
+#
+#
+#
 
 
 
@@ -106,7 +106,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-        'id', 'phone', 'password', "full_name", 'is_active', 'is_staff', "is_teacher", 'is_admin', 'is_student')
+        'id', 'phone_number', 'password','email', 'is_active', 'is_staff', "is_teacher", 'is_admin', 'is_student')
 
 
 class ChangePasswordSerializer(serializers.ModelSerializer):
