@@ -27,9 +27,7 @@ class TeacherApi(APIView):
         data["teacher"] = serializer.data
         return Response(data=data)
 
-        #     data["data"]=serializer.data
-        #     return Response(data=data)
-        # return Response(serializer.errors)
+
 
     @swagger_auto_schema(request_body=TeacherSerializerPost)
     def post(self, request):
@@ -111,7 +109,7 @@ class TeacherApi(APIView):
 
         try:
             # ID ni so'rovdan olish
-            teacher_id = request.query_params.get('id')
+            teacher_id = request.query_nparams.get('id')
             if not teacher_id:
                 return Response(
                     {"success": False, "xabar": "ID parametri talab qilinadi"},

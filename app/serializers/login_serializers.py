@@ -200,12 +200,12 @@ class TableSerializer(serializers.ModelSerializer):
         fields = ['id', 'start_time', 'end_time', 'room', 'type', 'descriptions']
 
 
-class StudentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Student
-        fields = ['id', 'user', 'group', 'course', 'is_line', 'descriptions']
-
-#
+    # class StudentSerializer(serializers.ModelSerializer):
+    #     class Meta:
+    #         model = Student
+    #         fields = [ 'user', 'group',  'is_line', 'descriptions']
+    #
+    # #
 # #
 # class TopicsSerializer(serializers.ModelSerializer):
 #     class Meta:
