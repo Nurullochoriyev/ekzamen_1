@@ -7,6 +7,21 @@ class TeacherSerializer(serializers.ModelSerializer):
         model=Teacher
         fields=["id","user","departments","course","descriptions"]
 
+
+
+class TeacherUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Teacher
+        fields = ["id","user","departments","course","descriptions"]
+        extra_kwargs = {
+            'id': {'read_only': True},
+            'user': {'required': False},
+            'departments': {'required': False},
+            'course': {'required': False},
+            'descriptions': {'required': False}
+        }
+
+
 class TeacherUserSerializer(serializers.ModelSerializer):
     is_active=serializers.BooleanField(read_only=True)
     is_teacher=serializers.BooleanField(read_only=True)

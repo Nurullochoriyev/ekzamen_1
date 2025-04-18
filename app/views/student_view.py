@@ -105,6 +105,9 @@
 
 
 from django.contrib.auth.hashers import make_password
+from django.db import transaction
+from django.shortcuts import get_object_or_404
+from drf_yasg import openapi
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -114,6 +117,22 @@ from ..serializers.student_serializer import StudentSerializer, StudentSerialize
 
 
 class StudentApi(APIView):
+
+    @swagger_auto_schema(
+        responses={
+            200: StudentSerializerPost(many=True),
+            400: "Noto'g'ri so'rov"
+        }
+    )
+    def get(self, request):
+        data = {"success": True}
+        teacher = Student.objects.all()
+        serializer = StudentSerializer(teacher, many=True)
+        data["teacher"] = serializer.data
+        return Response(data=data)
+
+
+
     @swagger_auto_schema(request_body=StudentSerializerPost)
     def post(self, request):
         data = {"success": True}
@@ -143,3 +162,59 @@ class StudentApi(APIView):
         data['user'] = StudentUserSerializer(user).data
         data['student'] = StudentSerializer(student).data
         return Response(data)
+
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                'id',
+                openapi.IN_QUERY,
+                description="O'chiriladigan o'qituvchi IDsi",
+                type=openapi.TYPE_INTEGER,
+                required=True
+            )
+        ],
+        responses={
+            204: "Muvaffaqiyatli o'chirildi",
+            404: "O'qituvchi topilmadi",
+            500: "Server xatosi"
+        }
+    )
+    def delete(self, request):
+        javob = {"success": True}
+
+        try:
+            # ID ni so'rovdan olish
+            student_id = request.GET.get('id')
+            if not student_id:
+                return Response(
+                    {"success": False, "xabar": "ID parametri talab qilinadi"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Studentni topish
+            student = get_object_or_404(Student, id=student_id)
+            user = student.user  # Bog'langan foydalanuvchi
+
+            # Transaction ichida o'chirish
+            with transaction.atomic():
+                student.delete()  # Avval Student o'chiramiz
+                user.delete()  # Keyin foydalanuvchini o'chiramiz
+
+            return Response(
+                {"success": True, "xabar": "Student muvaffaqiyatli o'chirildi"},
+                status=status.HTTP_204_NO_CONTENT
+            )
+
+        except Student.DoesNotExist:
+            return Response(
+                {"success": False, "xabar": "Student topilmadi"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as xato:
+            return Response(
+                {"success": False, "xabar": str(xato)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def patch(self,request):
+        pass

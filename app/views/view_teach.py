@@ -4,13 +4,15 @@ from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.views import APIView
+
+from ..add_pagination import CustomPagination
 from ..models.model_teacher import *
-from ..serializers import TeacherSerializer, UserSerializer
+from ..serializers import  UserSerializer
 from rest_framework.response import Response
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from ..serializers.teacher_serializers import TeacherSerializerPost
+from ..serializers.teacher_serializers import TeacherSerializerPost, TeacherSerializer, TeacherUpdateSerializer
 
 
 class TeacherApi(APIView):
@@ -22,8 +24,11 @@ class TeacherApi(APIView):
     )
     def get(self, request):
         data = {"success": True}
-        teacher = Teacher.objects.all()
-        serializer = TeacherSerializer(teacher, many=True)
+        teacher = Teacher.objects.all().order_by('-id')
+        paginator=CustomPagination()
+        paginator.page_size=2
+        result_page=paginator.paginate_queryset(teacher,request)
+        serializer = TeacherSerializer(result_page, many=True)
         data["teacher"] = serializer.data
         return Response(data=data)
 
@@ -109,7 +114,7 @@ class TeacherApi(APIView):
 
         try:
             # ID ni so'rovdan olish
-            teacher_id = request.query_nparams.get('id')
+            teacher_id = request.GET.get('id')
             if not teacher_id:
                 return Response(
                     {"success": False, "xabar": "ID parametri talab qilinadi"},
@@ -141,15 +146,37 @@ class TeacherApi(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+    @swagger_auto_schema(
+        operation_description="ID orqali o'qituvchi ma'lumotlarini yangilash",
+        request_body=TeacherUpdateSerializer,
+        responses={
+            200: TeacherUpdateSerializer,
+            400: "Noto'g'ri so'rov formati",
+            404: "O'qituvchi topilmadi"
+        }
+    )
+    def patch(self, request, id):
+        try:
+            teacher = Teacher.objects.get(id=id)
+            serializer = TeacherUpdateSerializer(teacher, data=request.data, partial=True)
 
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    'success': True,
+                    'data': serializer.data
+                })
 
+            return Response({
+                'success': False,
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
 
-
-
-
-
-
-
+        except Teacher.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': "O'qituvchi topilmadi"
+            }, status=status.HTTP_404_NOT_FOUND)
     # @swagger_auto_schema(request_body=TeacherSerializerPost)
     # def post(self, request):
     #     data = {"success": True}

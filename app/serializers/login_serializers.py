@@ -162,10 +162,10 @@ class DepartmentsSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'is_active', 'descriptions']
 
 
-class TeacherSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Teacher
-        fields = ["id", 'user', 'departments', 'course', 'descriptions']
+# class TeacherSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Teacher
+#         fields = ["id", 'user', 'departments', 'course', 'descriptions']
 
 
 
