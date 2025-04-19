@@ -55,3 +55,12 @@ class GroupStudentDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = GroupStudent
         fields = '__all__'
+
+
+
+
+
+class GroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GroupStudent
+        fields = ['title', 'course', 'teacher', 'table', 'start_date', 'finish_date']

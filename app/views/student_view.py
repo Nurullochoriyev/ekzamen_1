@@ -112,6 +112,8 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from drf_yasg.utils import swagger_auto_schema
+
+from ..add_pagination import CustomPagination
 from ..models import Student, User
 from ..serializers.student_serializer import StudentSerializer, StudentSerializerPost,StudentUserSerializer
 
@@ -126,8 +128,11 @@ class StudentApi(APIView):
     )
     def get(self, request):
         data = {"success": True}
-        teacher = Student.objects.all()
-        serializer = StudentSerializer(teacher, many=True)
+        teacher = Student.objects.all().order_by('-id')
+        paginator = CustomPagination()
+        paginator.page_size = 2
+        result_page = paginator.paginate_queryset(teacher, request)
+        serializer = StudentSerializer(result_page, many=True)
         data["teacher"] = serializer.data
         return Response(data=data)
 
@@ -218,3 +223,6 @@ class StudentApi(APIView):
 
     def patch(self,request):
         pass
+
+
+

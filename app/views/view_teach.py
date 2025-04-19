@@ -110,14 +110,14 @@ class TeacherApi(APIView):
         }
     )
     def delete(self, request):
-        javob = {"success": True}
+        data = {"success": True}
 
         try:
             # ID ni so'rovdan olish
             teacher_id = request.GET.get('id')
             if not teacher_id:
                 return Response(
-                    {"success": False, "xabar": "ID parametri talab qilinadi"},
+                    data={"success": False, "xabar": "ID parametri talab qilinadi"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
@@ -131,18 +131,18 @@ class TeacherApi(APIView):
                 user.delete()  # Keyin foydalanuvchini o'chiramiz
 
             return Response(
-                {"success": True, "xabar": "O'qituvchi muvaffaqiyatli o'chirildi"},
+                data={"success": True, "xabar": "O'qituvchi muvaffaqiyatli o'chirildi"},
                 status=status.HTTP_204_NO_CONTENT
             )
 
         except Teacher.DoesNotExist:
             return Response(
-                {"success": False, "xabar": "O'qituvchi topilmadi"},
+                data={"success": False, "xabar": "O'qituvchi topilmadi"},
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as xato:
             return Response(
-                {"success": False, "xabar": str(xato)},
+                data={"success": False, "xabar": str(xato)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
