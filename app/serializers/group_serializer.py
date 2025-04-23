@@ -63,4 +63,44 @@ class GroupStudentDetailSerializer(serializers.ModelSerializer):
 class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = GroupStudent
-        fields = ['title', 'course', 'teacher', 'table', 'start_date', 'finish_date']
+        fields = ['title', 'course', 'teacher', 'table', 'start_date', 'end_date']
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+from rest_framework import serializers
+from ..models import GroupStudent
+
+class GroupNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GroupStudent
+        fields = ['name']  # Faqat nomini o'zgartirish uchun
+
+class GroupSerializerT(serializers.ModelSerializer):
+    class Meta:
+        model = GroupStudent
+        fields = ['id', 'name', 'students_count']  # O'qituvchi ko'radigan maydonlar
+
+class GroupAdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GroupStudent
+        fields = '__all__'  # Admin uchun barcha maydonlar

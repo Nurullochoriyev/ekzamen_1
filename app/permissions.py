@@ -27,3 +27,38 @@ class IsAdminOrTeacherLimitedEdit(BasePermission):
             return incoming_fields.issubset(allowed_fields)
 
         return False
+
+
+
+
+
+
+from rest_framework import permissions
+
+class IsTeacher(permissions.BasePermission):
+    message = "Faqat o'qituvchilar uchun ruxsat berilgan"
+
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and hasattr(request.user, 'is_teacher') and request.user.is_teacher
+
+
+
+
+
+
+
+
+
+
+
+
+
+from rest_framework import permissions
+
+class IsTeacher(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role == 'TEACHER'
+
+class IsAdmin(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role == 'ADMIN'

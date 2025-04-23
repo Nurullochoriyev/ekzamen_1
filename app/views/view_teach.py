@@ -12,171 +12,323 @@ from rest_framework.response import Response
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from ..serializers.teacher_serializers import TeacherSerializerPost, TeacherSerializer, TeacherUpdateSerializer
+from ..serializers.teacher_serializers import TeacherPostSerializer, TeacherSerializer, TeacherUpdateSerializer
 
 
-class TeacherApi(APIView):
+
+class Teacher_Api(APIView):
     @swagger_auto_schema(
-        responses={
-            200: TeacherSerializerPost(many=True),
-            400: "Noto'g'ri so'rov"
-        }
+        responses={200: TeacherSerializer(many=True)}
     )
-    def get(self, request):
+    def get(self,request):
         data = {"success": True}
-        teacher = Teacher.objects.all().order_by('-id')
-        paginator=CustomPagination()
-        paginator.page_size=2
-        result_page=paginator.paginate_queryset(teacher,request)
-        serializer = TeacherSerializer(result_page, many=True)
+        teachers = Teacher.objects.all().order_by('-id')
+        paginator = CustomPagination()
+        paginator.page_size = 2
+        result_page = paginator.paginate_queryset(teachers, request)
+        serializer =  TeacherSerializer(result_page, many=True)
         data["teacher"] = serializer.data
-        return Response(data=data)
-
-
-
-    @swagger_auto_schema(request_body=TeacherSerializerPost)
-    def post(self, request):
-        # Boshlang'ich javob ma'lumoti
-        javob = {"success": True}  # "muvaffaqiyatli": True deb ham yozish mumkin
-
-        try:
-            # 1. So'rovdan ma'lumotlarni olish
-            foydalanuvchi_maqlumotlari = request.data["user"]
-            oqituvchi_maqlumotlari = request.data["teacher"]
-            telefon_raqami = foydalanuvchi_maqlumotlari["phone_number"]
-
-            # 2. Foydalanuvchini yaratish va tekshirish
-            foydalanuvchi_serializer = UserSerializer(data=foydalanuvchi_maqlumotlari)
-            if not foydalanuvchi_serializer.is_valid():
-                return Response(
-                    data={"success": False, "xatolar": foydalanuvchi_serializer.errors},
-                    status=status.HTTP_400_BAD_REQUEST  # Noto'g'ri so'rov kodi
-                )
-
-            # Parolni shifrlash va qo'shimcha maydonlarni to'ldirish
-            tasdiqlangan_maqlumot = foydalanuvchi_serializer.validated_data
-            tasdiqlangan_maqlumot['password'] = make_password(tasdiqlangan_maqlumot.get("password"))
-            tasdiqlangan_maqlumot['is_teacher'] = True  # Bu o'qituvchi ekanligi
-            tasdiqlangan_maqlumot['is_active'] = True  # Faol foydalanuvchi
-
-            # Foydalanuvchini saqlash
-            yangi_foydalanuvchi = foydalanuvchi_serializer.save()
-
-            # 3. O'qituvchi ma'lumotlarini tayyorlash
-            oqituvchi_maqlumotlari["user"] = yangi_foydalanuvchi.id
-            oqituvchi_serializer = TeacherSerializer(data=oqituvchi_maqlumotlari)
-
-            if not oqituvchi_serializer.is_valid():
-                # Agar o'qituvchi yaratilmagan bo'lsa, foydalanuvchini o'chiramiz
-                yangi_foydalanuvchi.delete()
-                return Response(
-                    data={"success": False, "xatolar": oqituvchi_serializer.errors},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # O'qituvchini saqlash
-            oqituvchi_serializer.save()
-
-            # 4. Muvaffaqiyatli javob qaytarish
-            javob['data'] = foydalanuvchi_serializer.data
-            return Response(data=javob, status=status.HTTP_201_CREATED)  # Yaratildi kodi
-
-        # Xatoliklarni qo'llash
-        except KeyError as xato:
-            return Response(
-                data={"success": False, "xabar": f"So'rovda yetishmayotgan kalit: {str(xato)}"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        except Exception as xato:
-            return Response(
-                data={"success": False, "xabar": str(xato)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR  # Server xatosi kodi
-            )
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
-        manual_parameters=[
-            openapi.Parameter(
-                'id',
-                openapi.IN_QUERY,
-                description="O'chiriladigan o'qituvchi IDsi",
-                type=openapi.TYPE_INTEGER,
-                required=True
-            )
-        ],
-        responses={
-            204: "Muvaffaqiyatli o'chirildi",
-            404: "O'qituvchi topilmadi",
-            500: "Server xatosi"
-        }
+        request_body=TeacherPostSerializer
     )
-    def delete(self, request):
-        data = {"success": True}
+    def post(self,request):
+        serializer = TeacherPostSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(data=serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            # ID ni so'rovdan olish
-            teacher_id = request.GET.get('id')
-            if not teacher_id:
-                return Response(
-                    data={"success": False, "xabar": "ID parametri talab qilinadi"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
 
-            # O'qituvchini topish
-            teacher = get_object_or_404(Teacher, id=teacher_id)
-            user = teacher.user  # Bog'langan foydalanuvchi
 
-            # Transaction ichida o'chirish
-            with transaction.atomic():
-                teacher.delete()  # Avval o'qituvchini o'chiramiz
-                user.delete()  # Keyin foydalanuvchini o'chiramiz
 
-            return Response(
-                data={"success": True, "xabar": "O'qituvchi muvaffaqiyatli o'chirildi"},
-                status=status.HTTP_204_NO_CONTENT
-            )
 
-        except Teacher.DoesNotExist:
-            return Response(
-                data={"success": False, "xabar": "O'qituvchi topilmadi"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as xato:
-            return Response(
-                data={"success": False, "xabar": str(xato)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
 
-    @swagger_auto_schema(
-        operation_description="ID orqali o'qituvchi ma'lumotlarini yangilash",
-        request_body=TeacherUpdateSerializer,
-        responses={
-            200: TeacherUpdateSerializer,
-            400: "Noto'g'ri so'rov formati",
-            404: "O'qituvchi topilmadi"
-        }
-    )
-    def patch(self, request, id):
-        try:
-            teacher = Teacher.objects.get(id=id)
-            serializer = TeacherUpdateSerializer(teacher, data=request.data, partial=True)
 
-            if serializer.is_valid():
-                serializer.save()
-                return Response({
-                    'success': True,
-                    'data': serializer.data
-                })
 
-            return Response({
-                'success': False,
-                'errors': serializer.errors
-            }, status=status.HTTP_400_BAD_REQUEST)
 
-        except Teacher.DoesNotExist:
-            return Response({
-                'success': False,
-                'message': "O'qituvchi topilmadi"
-            }, status=status.HTTP_404_NOT_FOUND)
+
+
+
+
+
+
+
+
+
+
+
+
+#
+# class TeacherApi(APIView):
+#     @swagger_auto_schema(
+#         responses={
+#             200: TeacherSerializerPost(many=True),
+#             400: "Noto'g'ri so'rov"
+#         }
+#     )
+#     def get(self, request):
+#         data = {"success": True}
+#         teacher = Teacher.objects.all().order_by('-id')
+#         paginator=CustomPagination()
+#         paginator.page_size=2
+#         result_page=paginator.paginate_queryset(teacher,request)
+#         serializer = TeacherSerializer(result_page, many=True)
+#         data["teacher"] = serializer.data
+#         return Response(data=data)
+#
+#
+#
+#     @swagger_auto_schema(request_body=TeacherSerializerPost)
+#     def post(self, request):
+#         # Boshlang'ich javob ma'lumoti
+#         javob = {"success": True}  # "muvaffaqiyatli": True deb ham yozish mumkin
+#
+#         try:
+#             # 1. So'rovdan ma'lumotlarni olish
+#             foydalanuvchi_maqlumotlari = request.data["user"]
+#             oqituvchi_maqlumotlari = request.data["teacher"]
+#             telefon_raqami = foydalanuvchi_maqlumotlari["phone_number"]
+#
+#             # 2. Foydalanuvchini yaratish va tekshirish
+#             foydalanuvchi_serializer = UserSerializer(data=foydalanuvchi_maqlumotlari)
+#             if not foydalanuvchi_serializer.is_valid():
+#                 return Response(
+#                     data={"success": False, "xatolar": foydalanuvchi_serializer.errors},
+#                     status=status.HTTP_400_BAD_REQUEST  # Noto'g'ri so'rov kodi
+#                 )
+#
+#             # Parolni shifrlash va qo'shimcha maydonlarni to'ldirish
+#             tasdiqlangan_maqlumot = foydalanuvchi_serializer.validated_data
+#             tasdiqlangan_maqlumot['password'] = make_password(tasdiqlangan_maqlumot.get("password"))
+#             tasdiqlangan_maqlumot['is_teacher'] = True  # Bu o'qituvchi ekanligi
+#             tasdiqlangan_maqlumot['is_active'] = True  # Faol foydalanuvchi
+#
+#             # Foydalanuvchini saqlash
+#             yangi_foydalanuvchi = foydalanuvchi_serializer.save()
+#
+#             # 3. O'qituvchi ma'lumotlarini tayyorlash
+#             oqituvchi_maqlumotlari["user"] = yangi_foydalanuvchi.id
+#             oqituvchi_serializer = TeacherSerializer(data=oqituvchi_maqlumotlari)
+#
+#             if not oqituvchi_serializer.is_valid():
+#                 # Agar o'qituvchi yaratilmagan bo'lsa, foydalanuvchini o'chiramiz
+#                 yangi_foydalanuvchi.delete()
+#                 return Response(
+#                     data={"success": False, "xatolar": oqituvchi_serializer.errors},
+#                     status=status.HTTP_400_BAD_REQUEST
+#                 )
+#
+#             # O'qituvchini saqlash
+#             oqituvchi_serializer.save()
+#
+#             # 4. Muvaffaqiyatli javob qaytarish
+#             javob['data'] = foydalanuvchi_serializer.data
+#             return Response(data=javob, status=status.HTTP_201_CREATED)  # Yaratildi kodi
+#
+#         # Xatoliklarni qo'llash
+#         except KeyError as xato:
+#             return Response(
+#                 data={"success": False, "xabar": f"So'rovda yetishmayotgan kalit: {str(xato)}"},
+#                 status=status.HTTP_400_BAD_REQUEST
+#             )
+#         except Exception as xato:
+#             return Response(
+#                 data={"success": False, "xabar": str(xato)},
+#                 status=status.HTTP_500_INTERNAL_SERVER_ERROR  # Server xatosi kodi
+#             )
+#
+#     @swagger_auto_schema(
+#         manual_parameters=[
+#             openapi.Parameter(
+#                 'id',
+#                 openapi.IN_QUERY,
+#                 description="O'chiriladigan o'qituvchi IDsi",
+#                 type=openapi.TYPE_INTEGER,
+#                 required=True
+#             )
+#         ],
+#         responses={
+#             204: "Muvaffaqiyatli o'chirildi",
+#             404: "O'qituvchi topilmadi",
+#             500: "Server xatosi"
+#         }
+#     )
+#     def delete(self, request):
+#         data = {"success": True}
+#
+#         try:
+#             # ID ni so'rovdan olish
+#             teacher_id = request.GET.get('id')
+#             if not teacher_id:
+#                 return Response(
+#                     data={"success": False, "xabar": "ID parametri talab qilinadi"},
+#                     status=status.HTTP_400_BAD_REQUEST
+#                 )
+#
+#             # O'qituvchini topish
+#             teacher = get_object_or_404(Teacher, id=teacher_id)
+#             user = teacher.user  # Bog'langan foydalanuvchi
+#
+#             # Transaction ichida o'chirish
+#             with transaction.atomic():
+#                 teacher.delete()  # Avval o'qituvchini o'chiramiz
+#                 user.delete()  # Keyin foydalanuvchini o'chiramiz
+#
+#             return Response(
+#                 data={"success": True, "xabar": "O'qituvchi muvaffaqiyatli o'chirildi"},
+#                 status=status.HTTP_204_NO_CONTENT
+#             )
+#
+#         except Teacher.DoesNotExist:
+#             return Response(
+#                 data={"success": False, "xabar": "O'qituvchi topilmadi"},
+#                 status=status.HTTP_404_NOT_FOUND
+#             )
+#         except Exception as xato:
+#             return Response(
+#                 data={"success": False, "xabar": str(xato)},
+#                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
+#             )
+#
+#     def put(self, request, pk):
+#         teacher = get_object_or_404(Teacher, pk=pk)
+#         serializer = TeacherSerializerPost(teacher, data=request.data)
+#
+#         if serializer.is_valid():
+#             teacher = serializer.save()
+#             return Response(TeacherSerializer(teacher).data, status=status.HTTP_200_OK)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#
+#     def patch(self, request, pk):
+#         teacher = get_object_or_404(Teacher, pk=pk)
+#         serializer = TeacherSerializerPost(teacher, data=request.data, partial=True)
+#
+#         if serializer.is_valid():
+#             teacher = serializer.save()
+#             return Response(TeacherSerializer(teacher).data, status=status.HTTP_200_OK)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+# from rest_framework import generics, permissions
+# from rest_framework.response import Response
+# from ..models import GroupStudent
+# from ..permissions import *
+# from ..serializers.group_serializer import GroupNameSerializer
+#
+# class GroupNameUpdateAPIView(generics.UpdateAPIView):
+#     serializer_class = GroupNameSerializer
+#     permission_classes = [permissions.IsAuthenticated, IsTeacher]
+#
+#     def get_queryset(self):
+#         # Faqat o'zining guruhlarini ko'rish
+#         return GroupStudent.objects.filter(teacher=self.request.user)
+#
+#     def patch(self, request, *args, **kwargs):
+#         instance = self.get_object()
+#         serializer = self.get_serializer(instance, data=request.data, partial=True)
+#         serializer.is_valid(raise_exception=True)
+#
+#         # Faqat name fieldini yangilashga ruxsat beramiz
+#         instance.name = serializer.validated_data.get('name', instance.name)
+#         instance.save()
+#
+#         return Response(serializer.data)
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    #
+    # @swagger_auto_schema(
+    #     operation_description="ID orqali o'qituvchi ma'lumotlarini yangilash",
+    #     request_body=TeacherUpdateSerializer,
+    #     responses={
+    #         200: TeacherUpdateSerializer,
+    #         400: "Noto'g'ri so'rov formati",
+    #         404: "O'qituvchi topilmadi"
+    #     }
+    # )
+    # def patch(self, request, id):
+    #     try:
+    #         teacher = Teacher.objects.get(id=id)
+    #         serializer = TeacherUpdateSerializer(teacher, data=request.data, partial=True)
+    #
+    #         if serializer.is_valid():
+    #             serializer.save()
+    #             return Response({
+    #                 'success': True,
+    #                 'data': serializer.data
+    #             })
+    #
+    #         return Response({
+    #             'success': False,
+    #             'errors': serializer.errors
+    #         }, status=status.HTTP_400_BAD_REQUEST)
+    #
+    #     except Teacher.DoesNotExist:
+    #         return Response({
+    #             'success': False,
+    #             'message': "O'qituvchi topilmadi"
+    #         }, status=status.HTTP_404_NOT_FOUND)
+    #
+    #
+    #
+    #
+    #
+    #
+    #
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     # @swagger_auto_schema(request_body=TeacherSerializerPost)
     # def post(self, request):
     #     data = {"success": True}

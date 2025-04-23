@@ -4,11 +4,12 @@ from . import UserSerializer
 from ..models import Parents, Student, GroupStudent
 from ..models.model_teacher import  *
 class StudentSerializer(serializers.ModelSerializer):
+
     # group= serializers.PrimaryKeyRelatedField(queryset=GroupStudent.objects.all(),many=True)
     class Meta:
         model=Student
 
-        fields=["user","group","is_line","descriptions"]
+        fields=["group","is_line","descriptions"]
     # def create(self, validated_data):
     #     user_db=validated_data.pop("user")
     #     group_db=validated_data.pop("group")
@@ -18,7 +19,7 @@ class StudentSerializer(serializers.ModelSerializer):
     #     return student
 
 
-
+############################################
 class ParentsSerializer(serializers.ModelSerializer):
     class Meta:
         model=Parents
@@ -28,7 +29,7 @@ class GroupStudentSerializer(serializers.ModelSerializer):
         model=GroupStudent
         fields=['title','course','table','start_date','end_date','descriptions']
 
-
+###########################################
 class StudentUserSerializer(serializers.ModelSerializer):
     is_active=serializers.BooleanField(read_only=True)
     is_teacher=serializers.BooleanField(read_only=True)

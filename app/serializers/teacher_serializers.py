@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from . import UserSerializer
+# from ..models import GroupStudent, Student
 from ..models.model_teacher import  *
 class TeacherSerializer(serializers.ModelSerializer):
     class Meta:
@@ -32,10 +33,22 @@ class TeacherUserSerializer(serializers.ModelSerializer):
         abstract=True
         model=User
         fields=('id','phone_number','password','email','is_active', 'is_teacher', 'is_student', 'is_staff','is_admin')
-class TeacherSerializerPost(serializers.Serializer):
-    user=TeacherUserSerializer()
-    teacher=TeacherSerializer()
+class TeacherPostSerializer(serializers.Serializer):
+    user = TeacherUserSerializer()
+    departments = serializers.PrimaryKeyRelatedField(queryset=Departments.objects.all(),many=True)
+    course = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all(),many=True)
+    class Meta:
+        model = Teacher
+        fields = ["id","user","departments","course","descriptions"]
 
-
-
-
+    def create(self, validated_data):
+        user_db = validated_data.pop("user")
+        user_db["is_active"] = True
+        user_db["is_teacher"] = True
+        departments_db = validated_data.pop("departments")
+        course_db = validated_data.pop("course")
+        user = User.objects.create_user(**user_db)
+        teacher = Teacher.objects.create(user=user,**validated_data)
+        teacher.departments.set(departments_db)
+        teacher.course.set(course_db)
+        return teacher
