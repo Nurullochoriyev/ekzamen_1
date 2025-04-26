@@ -3,12 +3,12 @@ from app.views import *
 from django.contrib import admin
 from django.urls import path,include
 from rest_framework.routers import  DefaultRouter
-
+from .views.attendance_view import *
 from .views.attendance_view import AttendanceCreateAPIView
 from .views.group_views import *
 from app.views.student_view import StudentApi
 from app.views.view_teach import Teacher_Api
-
+from .views.homework_views import *
 router=DefaultRouter()
 
 
@@ -20,9 +20,11 @@ from rest_framework_simplejwt.views import (
 urlpatterns = [
 
     path("",include(router.urls)),
-    path('atten/',AttendanceCreateAPIView.as_view()),
+    path('HomeworkStudentAPIView/',HomeworkStudentAPIView.as_view()),
+    path('attendanceStudent/',AttendanceCreateAPIView.as_view()),
     path("student_api/",StudentApi.as_view()),
-    # path('attendance/',AttendanceApi.as_view()),
+    path('HomeworkCreateAPIView/',HomeworkCreateAPIView.as_view()),
+    path('TeacherAttendanceAPIView/',TeacherAttendanceAPIView.as_view()),
     path("get_phone/",PhoneSendOTP.as_view()),
     path("post_phone/",VerifySMS.as_view()),
     path("groupapi/",GroupApi.as_view()),
@@ -33,3 +35,6 @@ urlpatterns = [
     path("loginApi/",LoginApi.as_view()),
 
 ]
+
+
+

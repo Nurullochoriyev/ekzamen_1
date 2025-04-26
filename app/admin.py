@@ -1,11 +1,14 @@
 from django.contrib import admin
 
 from .models import GroupStudent, Student
-from .models.model_attendance import Attendance
+from .models.model_attendance import Attendance, StudentAttendance, TeacherAttendance, TAttendance
+from .models.model_homework import *
 from  .models.model_teacher import *
 from  .models.auth_users import *
 from .models.model_group import *
-admin.site.register([User,Departments,Teacher,Course,GroupStudent,Table,Rooms,TableType,Student,Attendance])
+admin.site.register([User,Departments,Teacher,Course,GroupStudent,Table,Rooms,
+                     TableType,Student,Attendance,StudentAttendance,
+                     TeacherAttendance,TAttendance,Homework,Topshiriq])
 
 #
 #
