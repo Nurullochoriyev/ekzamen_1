@@ -1,5 +1,5 @@
 
-import copy
+
 
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
@@ -39,6 +39,14 @@ class HomeworkCreateAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+
+    # def post2(self,request):
+
+
+
+
+
+
 class HomeworkStudentAPIView(APIView):
     parser_classes = [MultiPartParser, FormParser]  # Fayl yuklash uchun
 
@@ -75,12 +83,3 @@ class HomeworkStudentAPIView(APIView):
 
 
 
-#
-# a=[[1,2,3],[3,4,5]]
-#
-# c=copy.copy(a)
-# d=copy.deepcopy(a)
-# a[0][0]=55
-# print(a,id(a))
-# print(c,id(c))
-# print(d,id(d))

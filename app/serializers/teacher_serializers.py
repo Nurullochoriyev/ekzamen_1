@@ -8,15 +8,6 @@ class TeacherSerializer(serializers.ModelSerializer):
         model=Teacher
         fields=["id","user","departments","course","descriptions"]
 
-
-
-
-
-
-
-
-
-
 class TeacherUserSerializer(serializers.ModelSerializer):
     is_active=serializers.BooleanField(read_only=True)
     is_teacher=serializers.BooleanField(read_only=True)

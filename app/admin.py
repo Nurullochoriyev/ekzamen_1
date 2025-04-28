@@ -1,5 +1,5 @@
 from django.contrib import admin
-
+from .models.model_payment import *
 from .models import GroupStudent, Student
 from .models.model_attendance import Attendance, StudentAttendance, TeacherAttendance, TAttendance
 from .models.model_homework import *
@@ -8,7 +8,7 @@ from  .models.auth_users import *
 from .models.model_group import *
 admin.site.register([User,Departments,Teacher,Course,GroupStudent,Table,Rooms,
                      TableType,Student,Attendance,StudentAttendance,
-                     TeacherAttendance,TAttendance,Homework,Topshiriq])
+                     TeacherAttendance,TAttendance,Homework,Topshiriq,Month,Payment])
 
 #
 #
