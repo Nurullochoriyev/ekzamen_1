@@ -1,7 +1,7 @@
 import random
 
 
-import permission
+
 
 from ..make_token import *
 
@@ -9,7 +9,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from django.contrib.auth.hashers import make_password
-from rest_framework import status,permissions
+from rest_framework import status
 
 from ..permissions import IsAdmin
 from ..serializers import *
