@@ -1,10 +1,28 @@
 from ..models import GroupStudent, Teacher
 from ..models.model_attendance import *
 from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
 class AttendanceSerializer(serializers.ModelSerializer):
     class Meta:
         model=Attendance
         fields=['group','date','descriptions']
+
+        def validate(self, attrs):
+            request = self.context.get('request')
+            student = attrs.get('student')
+            teacher = request.user
+            group = getattr(student, 'group', None)
+
+            if not group:
+                raise PermissionDenied("Talabaning guruhi yo‘q.")
+
+            if hasattr(group.teacher, 'all'):
+                if teacher not in group.teacher.all():
+                    raise PermissionDenied("Siz bu guruhdagi studentga attendance yozolmaysiz.")
+            elif group.teacher != teacher:
+                raise PermissionDenied("Siz bu guruhdagi studentga attendance yozolmaysiz.")
+
+            return attrs
 
 
 # StudentAttendance uchun alohida serializer
@@ -67,12 +85,37 @@ class AttendanceCreateSerializer(serializers.Serializer):
 
         return attendance
 
+    def update(self, instance, validated_data):
+        """Attendance va unga bog'langan StudentAttendance'larni yangilash"""
+        instance.date = validated_data.get('date', instance.date)
+        instance.descriptions = validated_data.get('descriptions', instance.descriptions)
+        instance.save()
 
-class TAttendanceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model=TAttendance
-        fields=['date','descriptions']
+        attendances_data = validated_data.get('attendances', {})
 
+        # Eski student attendance yozuvlarini tozalaymiz
+        instance.student_attendances.all().delete()  # ← to‘g‘ri related_name bilan
+
+        # Yangilangan attendances asosida yangi yozuvlar yaratamiz
+        student_attendances = []
+        for student_id, status in attendances_data.items():
+            student_attendances.append(
+                StudentAttendance(
+                    attendance=instance,
+                    student_id=student_id,
+                    status=status
+                )
+            )
+
+        StudentAttendance.objects.bulk_create(student_attendances)
+
+        return instance
+
+
+# class TAttendanceSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model=TAttendance
+#         fields=['date','descriptions']
 class TeacherAttendanceBulkSerializer(serializers.Serializer):
     date = serializers.DateField(default=timezone.now)
     attendances = serializers.DictField(
@@ -81,7 +124,7 @@ class TeacherAttendanceBulkSerializer(serializers.Serializer):
     descriptions = serializers.CharField(required=False, allow_blank=True)
 
     def validate(self, data):
-        teacher_ids = [str(id) for id in data['attendances'].keys()]  # Stringga o'tkazamiz
+        teacher_ids = [str(id) for id in data['attendances'].keys()]
         existing_teachers = Teacher.objects.filter(id__in=teacher_ids).count()
         if existing_teachers != len(teacher_ids):
             raise serializers.ValidationError("Ba'zi IDlarga mos o'qituvchilar topilmadi")
@@ -92,13 +135,11 @@ class TeacherAttendanceBulkSerializer(serializers.Serializer):
         attendances_data = validated_data['attendances']
         descriptions = validated_data.get('descriptions', '')
 
-        # TAttendance yaratamiz
         t_attendance = TAttendance.objects.create(
             date=date,
             descriptions=descriptions
         )
 
-        # Har bir o'qituvchi uchun TeacherAttendance yaratamiz
         teacher_attendances = []
         for teacher_id, status in attendances_data.items():
             teacher_attendances.append(
@@ -112,10 +153,72 @@ class TeacherAttendanceBulkSerializer(serializers.Serializer):
         TeacherAttendance.objects.bulk_create(teacher_attendances)
         return t_attendance
 
+    def update(self, instance, validated_data):
+        """
+        TAttendance va unga bog'langan TeacherAttendance'larni yangilash
+        """
+        # Asosiy TAttendance ni yangilash
+        instance.date = validated_data.get('date', instance.date)
+        instance.descriptions = validated_data.get('descriptions', instance.descriptions)
+        instance.save()
 
+        # Yangi attendances ma'lumotlari
+        new_attendances = validated_data.get('attendances', {})
 
+        # Mavjud TeacherAttendance'larni olish
+        existing_attendances = {
+            str(ta.teacher_id): ta for ta in instance.teacher_attendances.all()
+        }
 
+        # Yangilash yoki yaratish uchun list
+        to_update = []
+        to_create = []
 
+        for teacher_id, status in new_attendances.items():
+            if teacher_id in existing_attendances:
+                # Mavjud bo'lsa yangilash
+                ta = existing_attendances[teacher_id]
+                ta.status = status
+                to_update.append(ta)
+            else:
+                # Yangi yaratish
+                to_create.append(
+                    TeacherAttendance(
+                        attendance=instance,
+                        teacher_id=teacher_id,
+                        status=status
+                    )
+                )
+
+        # Bulk update qilish
+        if to_update:
+            TeacherAttendance.objects.bulk_update(to_update, ['status'])
+
+        # Bulk create qilish
+        if to_create:
+            TeacherAttendance.objects.bulk_create(to_create)
+
+        return instance
+#################################################
+from rest_framework import serializers
+
+class TeacherSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Teacher  # model nomi sizda qanday bo‘lsa
+        fields = ['id', 'user']  # yoki kerakli maydonlar
+
+class TAttendanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TAttendance
+        fields = ['id', 'date', 'descriptions']
+
+class TeacherAttendanceSerializer(serializers.ModelSerializer):
+    teacher = TeacherSerializer()
+    attendance = TAttendanceSerializer()
+
+    class Meta:
+        model = TeacherAttendance
+        fields = ['id', 'teacher', 'attendance', 'status']
 
 
 

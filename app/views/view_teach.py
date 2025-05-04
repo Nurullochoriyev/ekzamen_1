@@ -3,8 +3,9 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
-
+from ..permissions import IsStaffUser,IsTeacher,IsAdminOrTeacherLimitedEdit
 from ..add_pagination import CustomPagination
 from ..models.model_teacher import *
 from ..serializers import  UserSerializer
@@ -14,9 +15,10 @@ from drf_yasg import openapi
 
 from ..serializers.teacher_serializers import TeacherPostSerializer, TeacherSerializer, TeacherUpdateSerializer
 
-
+# TEACHER TOLIQ ISHLAYAPDI
 
 class Teacher_Api(APIView):
+    # permission_classes = [IsAuthenticated, IsStaffUser]
     #teacher ishlayapdi get
     @swagger_auto_schema(
         responses={200: TeacherPostSerializer(many=True)}
@@ -34,11 +36,25 @@ class Teacher_Api(APIView):
     @swagger_auto_schema(
         request_body=TeacherPostSerializer
     )
-    def post(self,request):
-        serializer = TeacherPostSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
+    # TEACHERNI POST QILISH
+    def post(self, request):
+        data = request.data.copy()  # dict nusxasini olamiz
+
+        # 'departments' ni string bo‘lsa, listga aylantirish
+        departments = data.get('departments', '')
+        if isinstance(departments, str):
+            data['departments'] = list(map(int, departments.split(',')))
+
+        # 'course' ni string bo‘lsa, listga aylantirish
+        course = data.get('course', '')
+        if isinstance(course, str):
+            data['course'] = list(map(int, course.split(',')))
+
+        serializer = TeacherPostSerializer(data=data)
+        if serializer.is_valid():     #VALIDATSIYADAN O'TKIZADI
+            serializer.save()          #AGAR O'TSA SAQLAYDI
             return Response(data=serializer.data, status=status.HTTP_201_CREATED)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(request_body=TeacherPostSerializer,
@@ -59,13 +75,26 @@ class Teacher_Api(APIView):
         }
     )
     def put(self, request):
+        data = request.data.copy()  # So'rovni o'zgartirish uchun nusxa
+
+        # 'departments' ni string bo'lsa, listga aylantiramiz
+        departments = data.get('departments', '')
+        if isinstance(departments, str):
+            data['departments'] = list(map(int, departments.split(',')))
+
+        # 'course' ni string bo'lsa, listga aylantiramiz
+        course = data.get('course', '')
+        if isinstance(course, str):
+            data['course'] = list(map(int, course.split(',')))
+
+        # IDni olish
         teacher_id = request.query_params.get('id')
         if not teacher_id:
             return Response({'detail': "ID ko'rsatilmagan."}, status=status.HTTP_400_BAD_REQUEST)
 
         teacher = get_object_or_404(Teacher, pk=teacher_id)
-        serializer = TeacherPostSerializer(teacher, data=request.data)
 
+        serializer = TeacherPostSerializer(teacher, data=data)
         if serializer.is_valid():
             teacher = serializer.save()
             return Response(TeacherSerializer(teacher).data, status=status.HTTP_200_OK)
@@ -87,7 +116,20 @@ class Teacher_Api(APIView):
         }
     )
     def patch(self, request):
-        teacher_id = request.data.get('id')
+        data = request.data.copy()
+
+        # 'departments' ni string bo‘lsa listga aylantirish
+        departments = data.get('departments', '')
+        if isinstance(departments, str):
+            data['departments'] = list(map(int, departments.split(',')))
+
+        # 'course' ni string bo‘lsa listga aylantirish
+        course = data.get('course', '')
+        if isinstance(course, str):
+            data['course'] = list(map(int, course.split(',')))
+
+        # IDni olish va tekshirish
+        teacher_id = data.get('id')
         if not teacher_id:
             return Response({'detail': "ID ko‘rsatilmagan."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -97,8 +139,9 @@ class Teacher_Api(APIView):
             return Response({'detail': "ID noto‘g‘ri formatda."}, status=status.HTTP_400_BAD_REQUEST)
 
         teacher = get_object_or_404(Teacher, id=teacher_id)
-        serializer = TeacherUpdateSerializer(teacher, data=request.data, partial=True)
 
+        # Qisman yangilash
+        serializer = TeacherUpdateSerializer(teacher, data=data, partial=True)
         if serializer.is_valid():
             teacher = serializer.save()
             return Response(TeacherSerializer(teacher).data, status=status.HTTP_200_OK)

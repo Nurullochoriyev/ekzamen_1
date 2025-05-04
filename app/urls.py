@@ -11,34 +11,52 @@ from app.views.student_view import StudentApi
 from app.views.view_teach import Teacher_Api
 from .views.homework_views import *
 router=DefaultRouter()
+router.register('groups', GroupStudentViewSet)
+router.register(r'users', UserViewSet, basename='users')
+
 
 
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-
+# URL patterns
 urlpatterns = [
+    path("", include(router.urls)),
 
-    path("",include(router.urls)),
-    path('PaymentStatisticsView/',PaymentStatisticsView.as_view()),
-    path('GroupStudentStatistikaView/',GroupStudentStatistikaView.as_view()),
-    path('HomeworkStudentAPIView/',HomeworkStudentAPIView.as_view()),
-    path('PaymentAPIView/',PaymentAPIView.as_view()),
-    path('attendanceStudent/',AttendanceCreateAPIView.as_view()),
-    path("student_api/",StudentApi.as_view()),
-    path('HomeworkCreateAPIView/',HomeworkCreateAPIView.as_view()),
-    path('TeacherAttendanceAPIView/',TeacherAttendanceAPIView.as_view()),
-    path("get_phone/",PhoneSendOTP.as_view()),
-    path("post_phone/",VerifySMS.as_view()),
-    path("groupapi/",GroupApi.as_view()),
-    path('TeacherApi/',Teacher_Api.as_view()),
-    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    # Auth & JWT
 
-    path("loginApi/",LoginApi.as_view()),
+    path("loginApi/", LoginApi.as_view()),
+    path("get_phone/", PhoneSendOTP.as_view()),
+    path("post_phone/", VerifySMS.as_view()),
+    path("ChangePasswordView/", ChangePasswordView.as_view()),
+    path('SetPasswordView/',SetPasswordView.as_view()),
+    path("token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 
+    # Student & Teacher
+    path("B_student_api/", StudentApi.as_view()),
+    path("B_TeacherApi/", Teacher_Api.as_view()),
+
+    # Attendance
+    path("C_attendanceStudent/", AttendanceCreateAPIView.as_view()),
+    path('C_AttendanceStudentPatch/<int:attendance_id>/',AttendanceStudentPatch.as_view()),
+    path("C_TeacherAttendanceAPIView/", TeacherAttendanceAPIView.as_view()),
+    path('C_Teacher-attendancePATCH/<int:attendance_id>/', TeacherAttendanceAPIViewPatch.as_view()),
+
+    # Homework
+    path("A_HomeworkCreateAPIView/", HomeworkCreateAPIView.as_view()),
+    path("A_HomeworkStudentAPIView/", HomeworkStudentAPIView.as_view()),
+    path("A_baholash/<int:student_id>/", Baholash.as_view()),
+    path("A_BahoniKorish/<int:topshiriq_id>/", BahoniKorish.as_view()),
+    path("A_baholashuchunkorish/homework/<int:homework_id>/", UyVazifasiniTekshirishAPIView.as_view(), name="tekshirish-list"),
+
+    # Group & Stats
+    # path("groupapi/", GroupApi.as_view()),
+    path("PaymentStatisticsView/", PaymentStatisticsView.as_view()),
+    path("GroupStudentStatistikaView/", GroupStudentStatistikaView.as_view()),
+    path("PaymentAPIView/", PaymentAPIView.as_view()),
+    # path('GroupStudentDetailUpdateAPIView/',GroupStudentDetailUpdateAPIView.as_view()),
 ]
-
 
 

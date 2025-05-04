@@ -1,13 +1,16 @@
 from django.utils import timezone
 from drf_yasg import openapi
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 
+from ..permissions import IsStaffUser
 from ..serializers.payment_serializer import *
 from rest_framework.views import APIView
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.response import Response
 
 class PaymentAPIView(APIView):
+    permission_classes = [IsAuthenticated,IsStaffUser]
     @swagger_auto_schema(responses={200:PaymentSerializer(many=True)})
     def get(self,request):
         payment=Payment.objects.all()

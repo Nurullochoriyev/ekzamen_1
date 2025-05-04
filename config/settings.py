@@ -1,5 +1,6 @@
 
 import os.path
+from datetime import timedelta
 from pathlib import Path
 from xml.etree.ElementInclude import include
 
@@ -84,11 +85,19 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS':'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE':2,
 
-    # 'DEFAULT_PERMISSION_CLASSES': [
-    #     'rest_framework.permissions.IsAuthenticated',
-    # ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        # 'rest_framework.permissions.IsAuthenticated',
+    ],
 
 }
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # Access token muddati (1 soat)
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),  # Refresh token muddati (1 kun)
+    'AUTH_HEADER_TYPES': ('Bearer',),  # Token turi (Bearer token)
+}
+
+
 ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [

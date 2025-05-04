@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from . import CourseSerializer
 from .teacher_serializers import TeacherSerializer
-from ..models import Day, Rooms, TableType, Table, GroupStudent
+from ..models import Day, Rooms, TableType, Table, GroupStudent, Teacher
 
 
 class DaySerializer(serializers.ModelSerializer):
@@ -59,13 +59,19 @@ class GroupStudentDetailSerializer(serializers.ModelSerializer):
 
 
 
+#
+# class GroupSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = GroupStudent
+#         fields = ['title', 'course', 'teacher', 'table', 'start_date', 'end_date']
+
 
 class GroupSerializer(serializers.ModelSerializer):
+    teacher = serializers.PrimaryKeyRelatedField(queryset=Teacher.objects.all(), many=True)
+
     class Meta:
         model = GroupStudent
-        fields = ['title', 'course', 'teacher', 'table', 'start_date', 'end_date']
-
-
+        fields = '__all__'
 
 
 

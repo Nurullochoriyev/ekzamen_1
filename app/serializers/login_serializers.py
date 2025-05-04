@@ -6,31 +6,23 @@ from app.models import *
 
 
 
-class LoginSerializer(serializers.Serializer):
-    username=serializers.CharField()
-    password=serializers.CharField()
-    def validate(self,attrs):
-        username=attrs.get("username")
-        password=attrs.get("password")
-        try:
-            user=User.objects.get(username=username)
-        except User.DoesNotExist:
-            raise serializers.ValidationError(
-                {
-                    "success":False,
-                    "detail":"user doest not exist"
-                }
-            )
-        auth_user=authenticate(username=user.username,password=password)
-        if auth_user is None:
-            raise serializers.ValidationError(
-                {
-                    "success":False,
-                    "detail":"username or password is invalid"
-                }
 
-            )
-        attrs["user"]=auth_user
+class LoginSerializer(serializers.Serializer):
+    phone_number = serializers.CharField()
+    password = serializers.CharField()
+
+    def validate(self, attrs):
+        phone_number = attrs.get("phone_number")
+        password = attrs.get("password")
+        try:
+            user = User.objects.get(phone_number=phone_number)
+        except User.DoesNotExist:
+            raise serializers.ValidationError({"success": False,"detail": "User topilmadi" })
+
+        auth_user = authenticate(phone_number=user.phone_number, password=password)
+        if auth_user is None:
+            raise serializers.ValidationError({"success": False,"detail": "phone_number yoki password xato"})
+        attrs["user"] = auth_user
         return attrs
 
 
@@ -42,71 +34,35 @@ class LoginSerializer(serializers.Serializer):
 
 
 
-#
-# class TeacherCreateSerializer(serializers.ModelSerializer):
-#     phone_number = serializers.CharField(write_only=True)
-#     password = serializers.CharField(write_only=True)
-#     full_name = serializers.CharField(write_only=True, required=False)
-#
-#     class Meta:
-#         model = Teacher
-#         fields = ['departments', 'course', 'descriptions', 'phone_number', 'password', 'full_name']
-#
-#     def validate_phone_number(self, value):
-#         if User.objects.filter(phone_number=value).exists():
-#             raise serializers.ValidationError("Ushbu telefon raqam allaqachon ro'yxatdan o'tgan")
-#         return value
-# # ===============================================
-#     def create(self, validated_data):
-#         try:
-#             with transaction.atomic():
-#                 # User yaratish
-#                 user_data = {
-#                     'phone_number': validated_data.pop('phone_number'),
-#                     'password': validated_data.pop('password'),
-#                     'full_name': validated_data.pop('full_name', ''),
-#                     'is_teacher': True
-#                 }
-#
-#                 user = User.objects.create_user(**user_data)
-#
-#                 # Teacher yaratish
-#                 departments = validated_data.pop('departments', [])
-#                 courses = validated_data.pop('course', [])
-#
-#                 teacher = Teacher.objects.create(user=user, **validated_data)
-#
-#                 # ManyToMany maydonlarini sozlash
-#                 teacher.departments.set(departments)
-#                 teacher.course.set(courses)
-#
-#                 return teacher
-#
-#         except Exception as e:
-#             raise serializers.ValidationError(str(e))
-#
-#
-#
-# # ========================================
-#
-#
-#
-#
-#
-#
-#
-
 
 
 from rest_framework import serializers
 from ..models import *
 
 
+
+class UserCrudSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'phone_number', 'email', 'password']
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
+
+
+
+
+
+
+
+
+
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-        'id', 'phone_number', 'password','email', 'is_active', 'is_staff', "is_teacher", 'is_admin', 'is_student')
+        'id', 'username','phone_number', 'password','email', 'is_active', 'is_staff', "is_teacher", 'is_admin', 'is_student')
 
 
 class ChangePasswordSerializer(serializers.ModelSerializer):
@@ -139,6 +95,17 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['old_password', 'new_password', 're_new_password']
+
+
+
+class SetPasswordSerializer(serializers.Serializer):
+    new_password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        if data['new_password'] != data['confirm_password']:
+            raise serializers.ValidationError("Parollar mos emas.")
+        return data
 
 
 class SMSSerializer(serializers.Serializer):
