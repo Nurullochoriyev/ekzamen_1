@@ -9,7 +9,7 @@ from ..serializers.statistika_serializer import *
 from ..models.model_student import *
 class PaymentStatisticsView(APIView):
     def get(self, request, *args, **kwargs):
-        total_payments = Payment.objects.count()
+        total_payments = Payment.objects.count()     #TOLOV TIZIMINI STATISTIKASINI OLADI
         total_paid = Payment.objects.filter(status='paid').count()
         total_unpaid = Payment.objects.filter(status='unpaid').count()
         total_partial = Payment.objects.filter(status='partial').count()

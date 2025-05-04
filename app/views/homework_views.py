@@ -14,7 +14,8 @@ from ..serializers.homework_serializer import *
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-
+#teacher uyga vazifa yuklaydi va student fazifani oladi tayyorlab qayta yuklaydi techir tekshiradi va patch
+#               qilib baholaydi
 class HomeworkCreateAPIView(APIView):
     permission_classes = [IsTeacherOfStudentPermission,IsAuthenticated]
 
@@ -128,7 +129,7 @@ class Baholash(APIView):
     )
 
 
-
+#baholaydi patch qilib
     def patch(self, request, student_id):
         try:
             topshiriq = Topshiriq.objects.get(student_id=student_id)
@@ -141,7 +142,7 @@ class Baholash(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+#bahoni koradi
 class BahoniKorish(APIView):
     permission_classes = (IsAuthenticated,)
     @swagger_auto_schema(responses={200: BaholashSerializer()})
@@ -153,5 +154,5 @@ class BahoniKorish(APIView):
 
 
 
-# qaysi studentni baholash
+
 

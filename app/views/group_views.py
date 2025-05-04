@@ -6,14 +6,14 @@ from app.models import GroupStudent
 from app.serializers.group_serializer import GroupSerializer
 from ..permissions import IsAdminOrTeacherLimitedEdit
 
-class GroupStudentViewSet(ModelViewSet):
+class GroupStudentViewSet(ModelViewSet):    #GROUPGA CRUD
     queryset = GroupStudent.objects.all().order_by('-id')
     serializer_class = GroupSerializer
-    # permission_classes = [IsAuthenticated, IsAdminOrTeacherLimitedEdit]
-
+    permission_classes = [IsAuthenticated, IsAdminOrTeacherLimitedEdit]
+#GROUP YARATISH
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
-
+        # kelyotgan malumotni stringdan listga o'tkizadi
         if isinstance(data.get('teacher'), str):
             data['teacher'] = [t.strip() for t in data['teacher'].split(',')]
 
