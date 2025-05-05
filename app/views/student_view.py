@@ -15,7 +15,7 @@ from ..add_pagination import CustomPagination
 #  HAMMASI ISHLAYAPDI
 
 class StudentApi(APIView):
-    permission_classes = (IsAuthenticated,IsStaffUser,IsAdmin,IsAdminOrTeacherLimitedEdit)
+    # permission_classes = (IsAuthenticated,IsStaffUser,IsAdmin,IsAdminOrTeacherLimitedEdit)
 
     # Studentlarni olish (GET)
     @swagger_auto_schema(

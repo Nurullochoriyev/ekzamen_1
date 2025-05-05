@@ -10,7 +10,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework.response import Response
 
 class PaymentAPIView(APIView):
-    permission_classes = [IsAuthenticated,IsStaffUser]
+    # permission_classes = [IsAuthenticated,IsStaffUser]
     @swagger_auto_schema(responses={200:PaymentSerializer(many=True)})
     def get(self,request):       #git qilish
         payment=Payment.objects.all()

@@ -70,15 +70,20 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.cache import cache
 
-
+# Quyidagi VerifySMS klassi Django REST Framework yordamida yozilgan bo‘lib,
+# foydalanuvchining telefon raqamiga yuborilgan SMS kodini (OTP – bir martalik parol)
+# tekshirish uchun ishlatiladi. Quyida har bir qatorga izoh (kommentariya) berilgan:
 class VerifySMS(APIView):
     @swagger_auto_schema(request_body=VerifySMSSerializer)
     def post(self, request):
         serializer = VerifySMSSerializer(data=request.data)
 
         if serializer.is_valid():
+            # serializer orqali tekshirilgan telefon raqamini olamiz
             phone_number = serializer.validated_data['phone_number']
+            # yuborilgan tasdiqlash kodini olamiz
             verification_code = serializer.validated_data['verification_code']
+            # Cache ichidan shu telefon raqamga tegishli saqlangan kodni olamiz
             cached_code = str(cache.get(phone_number))
 
             if verification_code == cached_code:
