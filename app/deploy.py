@@ -44,7 +44,7 @@ WantedBy=multi-user.target
 
 server {
     listen 80;
-    server_name 164.92.227.218;
+    server_name 164.90.226.46;
 
     location = /favicon.ico { access_log off; log_not_found off; }
     location /static/ {
