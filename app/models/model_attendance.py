@@ -16,7 +16,7 @@ class TAttendance(models.Model):
     date = models.DateField(default=timezone.now)
     descriptions = models.TextField(blank=True)
     def __str__(self):
-        return self.date
+        return str(self.date)
 
 class StudentAttendance(models.Model):
     STATUS_CHOICES = [

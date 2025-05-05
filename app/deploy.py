@@ -44,11 +44,11 @@ WantedBy=multi-user.target
 
 server {
     listen 80;
-    server_name 165.22.27.171;
+    server_name 164.92.227.218;
 
     location = /favicon.ico { access_log off; log_not_found off; }
     location /static/ {
-       root /var/www3/ekzamen_1;
+       root /var/www/ekzamen_1;
     }
 
     location / {
