@@ -126,3 +126,18 @@ server {
 # sudo tail -f /var/log/nginx/error.log
 
 """
+
+
+"""
+
+            # PULL QILISH
+
+# git pull origin main
+# systemctl restart gunicorn
+# python3 manage.py runserver 0.0.0.0:8000
+
+"""
+
+
+
+

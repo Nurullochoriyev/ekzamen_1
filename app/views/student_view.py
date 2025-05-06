@@ -1,64 +1,66 @@
-from django.contrib.auth.hashers import make_password
-from django.db import transaction
-from django.shortcuts import get_object_or_404
-from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from drf_yasg import openapi
-from ..permissions import *
-from ..models import Student
-from ..serializers.student_serializer import *
-from ..add_pagination import CustomPagination
+# Django va DRF importlari
+from django.contrib.auth.hashers import make_password  # Parolni xashlash uchun
+from django.db import transaction  # Bitta blok ichida bir nechta bazaviy amalni xavfsiz bajarish uchun
+from django.shortcuts import get_object_or_404  # Ob'ektni olish, agar topilmasa 404 qaytaradi
+from drf_yasg.utils import swagger_auto_schema  # Swagger uchun view metodlarini bezash
+from rest_framework import status  # Javob status kodlari uchun
+from rest_framework.permissions import IsAuthenticated  # Foydalanuvchi avtorizatsiyasini tekshirish
+from rest_framework.views import APIView  # DRF bazaviy API view
+from rest_framework.response import Response  # JSON javoblar uchun
+from drf_yasg import openapi  # Swagger uchun parametrlar aniqlash
 
-#  HAMMASI ISHLAYAPDI
+# Loyhadagi kerakli modullarni chaqirib olamiz
+from ..permissions import *  # Custom permissionlar
+from ..models import Student  # Student modelini chaqiramiz
+from ..serializers.student_serializer import *  # Serializerni chaqiramiz
+from ..add_pagination import CustomPagination  # Maxsus pagination class
 
+# === STUDENTLAR UCHUN API CLASS ===
 class StudentApi(APIView):
-    # permission_classes = (IsAuthenticated,IsStaffUser,IsAdmin,IsAdminOrTeacherLimitedEdit)
+    # permission_classes = (IsAuthenticated,IsStaffUser,IsAdmin,IsAdminOrTeacherLimitedEdit)  # Faollashtirish mumkin
 
-    # Studentlarni olish (GET)
+    # === STUDENTLARNI RO‘YXATINI OLISH (GET) ===
     @swagger_auto_schema(
-        responses={200: StudentPostSerializer(many=True)},
-        description="Studentlar ro'yxatini olish"
+        responses={200: StudentPostSerializer(many=True)},  # 200 statusda StudentPostSerializer listi qaytadi
+        description="Studentlar ro'yxatini olish"  # Swaggerda chiqadigan izoh
     )
     def get(self, request):
-        students = Student.objects.all().order_by('-id')
-        paginator = CustomPagination()
-        paginator.page_size = 10
-        result_page = paginator.paginate_queryset(students, request)
-        serializer = StudentPostSerializer(result_page, many=True)
-        return paginator.get_paginated_response(serializer.data)
+        students = Student.objects.all().order_by('-id')  # Barcha studentlar, ID bo‘yicha teskari tartibda
+        paginator = CustomPagination()  # Maxsus pagination obyekt
+        paginator.page_size = 10  # Har bir sahifada 10 ta
+        result_page = paginator.paginate_queryset(students, request)  # Studentlar sahifalab ajratiladi
+        serializer = StudentPostSerializer(result_page, many=True)  # Sahifalangan queryset serialize qilinadi
+        return paginator.get_paginated_response(serializer.data)  # Sahifalangan JSON response
 
-    # Yangi student yaratish (POST)
+    # === YANGI STUDENT YARATISH (POST) ===
     @swagger_auto_schema(
-        request_body=StudentPostSerializer,
-        description="Yangi student yaratish"
+        request_body=StudentPostSerializer,  # Kiruvchi JSON uchun serializer
+        description="Yangi student yaratish"  # Swaggerdagi tushuntirish
     )
     def post(self, request):
-        data = request.data.copy()  # dict nusxasini olamiz
-        group = data.get('group', '')
-        if isinstance(group, str):
-            data['group'] = list(map(int, group.split(',')))
-        serializer = StudentPostSerializer(data=data)
-        if serializer.is_valid():
-            student = serializer.save()
-            return Response(data=StudentPostSerializer(student).data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        data = request.data.copy()  # So‘rovdagi ma'lumotlardan nusxa olamiz
+        group = data.get('group', '')  # group maydoni olish
+        if isinstance(group, str):  # Agar string bo‘lsa (masalan: "1,2")
+            data['group'] = list(map(int, group.split(',')))  # Listga aylantiramiz
+        serializer = StudentPostSerializer(data=data)  # Serializerga ma'lumot beramiz
+        if serializer.is_valid():  # Tekshiramiz
+            student = serializer.save()  # Saqlaymiz
+            return Response(data=StudentPostSerializer(student).data, status=status.HTTP_201_CREATED)  # Javob
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)  # Xatolik bo‘lsa
 
-    # Studentni yangilash (PUT)
+    # === TO‘LIQ YANGILASH (PUT) ===
     @swagger_auto_schema(
-        request_body=StudentPostSerializer,
-        manual_parameters=[
+        request_body=StudentPostSerializer,  # To‘liq yangilash uchun serializer
+        manual_parameters=[  # Swaggerda query parametrlari ko‘rsatish
             openapi.Parameter(
-                'id',              #SWAGGER PARAMETRLARI
-                openapi.IN_QUERY,
+                'id',
+                openapi.IN_QUERY,  # URL query (?id=1)
                 description="O'zgartiriladigan student IDsi",
                 type=openapi.TYPE_INTEGER,
                 required=True
             )
         ],
-        responses={
+        responses={  # Har xil statuslar uchun javoblar
             204: "Muvaffaqiyatli yangilandi",
             404: "Student topilmadi",
             500: "Server xatosi"
@@ -66,33 +68,26 @@ class StudentApi(APIView):
         description="Studentni yangilash"
     )
     def put(self, request):
-        # So'rovdan kelgan ma'lumotlar ustida o'zgartirish kiritish uchun nusxasini olamiz
-
-        data = request.data.copy()  # dict nusxasini olamiz
-        # 'group' maydonini string shaklida kelganda (masalan: "1,2,3") integer listga aylantiramiz
-
-        group = data.get('group', '')
-        if isinstance(group, str):
+        data = request.data.copy()  # Kiruvchi ma'lumotdan nusxa
+        group = data.get('group', '')  # Guruh maydoni
+        if isinstance(group, str):  # String bo‘lsa listga aylantiramiz
             data['group'] = list(map(int, group.split(',')))
-        # So'rov query parametrlari ichidan student ID ni olamiz (?id=1)
 
-        student_id = request.query_params.get('id')
+        student_id = request.query_params.get('id')  # URL querydan ID olamiz
         if not student_id:
             return Response({'detail': "ID ko'rsatilmagan."}, status=status.HTTP_400_BAD_REQUEST)
-        # Student obyektini ID orqali topamiz, agar mavjud bo'lmasa 404 qaytadi
-        student = get_object_or_404(Student, pk=student_id)
-        # Serializerga mavjud student va yangilangan data ni uzatamiz
-        serializer = StudentPostSerializer(student, data=data)  # <-- to'g'riladik: data yuboriladi
-        # Ma'lumotlar to'g'ri bo'lsa saqlaymiz va yangilangan holatda qaytaramiz
-        if serializer.is_valid():
-            student = serializer.save()      #o'tsa saqlanadi
-            return Response(StudentPostSerializer(student).data, status=status.HTTP_200_OK)   #saqlandi
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)   #hatolik qaytaradi
 
-    # Studentni qisman yangilash (PATCH)
+        student = get_object_or_404(Student, pk=student_id)  # Student mavjudligini tekshiramiz
+        serializer = StudentPostSerializer(student, data=data)  # Serializerga mavjud student va yangi data beriladi
+        if serializer.is_valid():  # Ma'lumotlar to‘g‘ri bo‘lsa
+            student = serializer.save()  # Saqlaymiz
+            return Response(StudentPostSerializer(student).data, status=status.HTTP_200_OK)  # Yangi ma’lumotni qaytaramiz
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)  # Agar valid emas
+
+    # === QISMAN YANGILASH (PATCH) ===
     @swagger_auto_schema(
-        request_body=StudentUpdateSerializer,
-        responses={
+        request_body=StudentUpdateSerializer,  # Patch uchun serializer
+        responses={  # Javob statuslari
             200: "Muvaffaqiyatli qisman yangilandi",
             400: "Noto‘g‘ri ma’lumot",
             404: "Student topilmadi",
@@ -101,30 +96,28 @@ class StudentApi(APIView):
         description="Studentni qisman yangilash"
     )
     def patch(self, request):
-        data = request.data.copy()  # dict nusxasini olamiz
+        data = request.data.copy()  # Nusxa olish
         group = data.get('group', '')
-        if isinstance(group, str):
+        if isinstance(group, str):  # Stringdan listga o‘tkazamiz
             data['group'] = list(map(int, group.split(',')))
 
-        student_id = data.get('id')
+        student_id = data.get('id')  # JSONdan ID olish
         if not student_id:
             return Response({'detail': "ID ko‘rsatilmagan."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            student_id = int(student_id)
+            student_id = int(student_id)  # Intga o‘tkazamiz
         except ValueError:
             return Response({'detail': "ID noto‘g‘ri formatda."}, status=status.HTTP_400_BAD_REQUEST)
 
-        student = get_object_or_404(Student, id=student_id)
-        serializer = StudentUpdateSerializer(student, data=data, partial=True)  # <-- data ni yuborayapmiz
-
+        student = get_object_or_404(Student, id=student_id)  # Student mavjudligini tekshirish
+        serializer = StudentUpdateSerializer(student, data=data, partial=True)  # Qisman yangilash uchun
         if serializer.is_valid():
             student = serializer.save()
             return Response(StudentPostSerializer(student).data, status=status.HTTP_200_OK)
-
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # Studentni o'chirish (DELETE)
+    # === O‘CHIRISH (DELETE) ===
     @swagger_auto_schema(
         manual_parameters=[
             openapi.Parameter(
@@ -135,7 +128,7 @@ class StudentApi(APIView):
                 required=True
             )
         ],
-        responses={
+        responses={  # Javoblar
             204: "Muvaffaqiyatli o'chirildi",
             404: "Student topilmadi",
             500: "Server xatosi"
@@ -144,24 +137,20 @@ class StudentApi(APIView):
     )
     def delete(self, request):
         data = {"success": True}
-
         try:
-            # ID ni so'rovdan olish
-            student_id = request.GET.get('id')
+            student_id = request.GET.get('id')  # URL querydan ID olish
             if not student_id:
                 return Response(
                     data={"success": False, "xabar": "ID parametri talab qilinadi"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Studentni topish
-            student = get_object_or_404(Student, id=student_id)
-            user = student.user  # Bog'langan foydalanuvchi
+            student = get_object_or_404(Student, id=student_id)  # Student topiladi
+            user = student.user  # Studentga bog‘langan foydalanuvchi
 
-            # Transaction ichida o'chirish
-            with transaction.atomic():
-                student.delete()  # Avval studentni o'chiramiz
-                user.delete()  # Keyin foydalanuvchini o'chiramiz
+            with transaction.atomic():  # Bitta tranzaksiyada o‘chirish
+                student.delete()  # Studentni o‘chirish
+                user.delete()  # Foydalanuvchini ham o‘chirish
 
             return Response(
                 data={"success": True, "xabar": "Student muvaffaqiyatli o'chirildi"},
@@ -178,7 +167,6 @@ class StudentApi(APIView):
                 data={"success": False, "xabar": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
 
 
 

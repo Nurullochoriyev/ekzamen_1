@@ -8,7 +8,7 @@ from .views.attendance_view import AttendanceCreateAPIView
 from .views.group_views import *
 from .views.statistika_views import *
 from app.views.student_view import StudentApi
-from app.views.view_teach import Teacher_Api
+from app.views.view_teach import Teacher_Api, Name
 from .views.homework_views import *
 router=DefaultRouter()
 router.register('groups', GroupStudentViewSet)
@@ -25,7 +25,7 @@ urlpatterns = [
     path("", include(router.urls)),
 
     # Auth & JWT
-
+    path('Name/',Name.as_view()),
     path("loginApi/", LoginApi.as_view()),
     path("get_phone/", PhoneSendOTP.as_view()),
     path("post_phone/", VerifySMS.as_view()),

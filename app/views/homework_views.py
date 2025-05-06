@@ -1,93 +1,83 @@
-
-
-
+# DRF parserlari fayl yuklash uchun
 from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
+from rest_framework.permissions import IsAuthenticated  # Foydalanuvchi avtorizatsiyadan o'tganligini tekshiradi
+from rest_framework.views import APIView  # DRFning asosiy View klassi
+from rest_framework.response import Response  # Javob obyektini shakllantiradi
+from rest_framework import status  # HTTP status kodlar
 
-from ..models.model_homework import Homework
-from ..permissions import IsTeacherOfStudentPermission
-from ..serializers.homework_serializer import *
+# Model, permission va serializerlar import qilinmoqda
+from ..models.model_homework import Homework  # Homework modeli
+from ..permissions import IsTeacherOfStudentPermission  # O'qituvchining talaba bilan bog‘liqligini tekshiruvchi permission
+from ..serializers.homework_serializer import *  # Homeworkga oid serializerlar
 
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema  # Swagger hujjatlash uchun
+from drf_yasg import openapi  # Swagger parametrlari
 
-#teacher uyga vazifa yuklaydi va student fazifani oladi tayyorlab qayta yuklaydi techir tekshiradi va patch
-#               qilib baholaydi
+# === O'qituvchi uyga vazifa yuklaydi, talaba yuklaydi, o'qituvchi tekshiradi ===
+
+# Uyga vazifa yaratish (O'qituvchi uchun)
 class HomeworkCreateAPIView(APIView):
-    permission_classes = [IsTeacherOfStudentPermission,IsAuthenticated]
+    permission_classes = [IsTeacherOfStudentPermission, IsAuthenticated]  # Ruxsat: o'qituvchi va login bo‘lgan foydalanuvchi
 
-    parser_classes = [MultiPartParser, FormParser]  # Fayl yuklash uchun
+    parser_classes = [MultiPartParser, FormParser]  # Fayl yuklashga ruxsat beruvchi parserlar
+
     """
     O'qituvchi yangi uy vazifasi yaratadi.
     """
-    @swagger_auto_schema(responses={200:TopshirishSerializer(many=True)})
-    def get(self,request):
-        homework=Topshiriq.objects.all()
-        serializer=TopshirishSerializer(homework,many=True)
-        return Response(serializer.data,status=status.HTTP_200_OK)
 
-
+    @swagger_auto_schema(responses={200: TopshirishSerializer(many=True)})  # Swagger javob sxemasi
+    def get(self, request):
+        homework = Topshiriq.objects.all()  # Barcha topshiriqlarni olish
+        serializer = TopshirishSerializer(homework, many=True)  # Serializatsiya qilish
+        return Response(serializer.data, status=status.HTTP_200_OK)  # 200 OK javob
 
     @swagger_auto_schema(
-        request_body=HomeWorkSerializer,  # Faqat request_body ishlatilmoqda
+        request_body=HomeWorkSerializer,  # Yuborilayotgan ma'lumot
         operation_description="Yangi uy vazifasi yaratish. Fayl yuklash uchun multipart/form-data formatidan foydalaning.",
         responses={201: 'saqlandi'},
-
-        consumes = ["multipart/form-data"]  # Muhim!
+        consumes=["multipart/form-data"]  # Fayl yuklash formatini bildiradi
     )
-
     def post(self, request):
-        serializer = HomeWorkSerializer(data=request.data)
+        serializer = HomeWorkSerializer(data=request.data)  # Serializerga ma’lumot berish
         if serializer.is_valid():
+            serializer.save()  # Saqlash
+            return Response(serializer.data, status=status.HTTP_201_CREATED)  # Muvaffaqiyatli javob
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)  # Xato bo‘lsa
+
+# === Talaba uyga vazifani ko‘radi va yuklaydi ===
+class HomeworkStudentAPIView(APIView):
+    parser_classes = [MultiPartParser, FormParser]  # Fayl yuklash uchun
+
+    # Vazifalarni ko‘rish
+    @swagger_auto_schema(responses={200: HomeWorkSerializer(many=True)})
+    def get(self, request):
+        homework = Homework.objects.all()  # Barcha uy vazifalari
+        serializer = HomeWorkSerializer(homework, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        request_body=TopshirishSerializer,
+        operation_description="Talaba uy vazifasini yuklaydi. Fayl yuklash uchun multipart/form-data formatidan foydalaning.",
+        responses={201: 'saqlandi'},
+        consumes=["multipart/form-data"]
+    )
+    def post(self, request):
+        serializer = TopshirishSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):  # Xato bo‘lsa avtomatik chiqaradi
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
-
-# STUDEN UYGA VAZIFANI TAYYORLAB YUKLAYDI
-
-class HomeworkStudentAPIView(APIView):
-    parser_classes = [MultiPartParser, FormParser]  # Fayl yuklash uchun
-# UYGA VAZIFANI QOBIL QILIB OLADI
-    @swagger_auto_schema(responses={200: HomeWorkSerializer(many=True)})
-    def get(self, request):
-        homework = Homework.objects.all()
-        serializer = HomeWorkSerializer(homework, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    @swagger_auto_schema(
-        request_body=TopshirishSerializer,  # Faqat request_body ishlatilmoqda
-        operation_description="Yangi uy vazifasi yuklandi. Fayl yuklash uchun multipart/form-data formatidan foydalaning.",
-        responses={201: 'saqlandi'},
-        consumes = ["multipart/form-data"]  # Muhim!
-    )
-# UYGA VAZIFANI KORGANDAN SONG TAYYORLAB YUKLAYDI
-    def post(self,request):
-        serializer=TopshirishSerializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            serializer.save()
-            return Response(serializer.data,status=status.HTTP_201_CREATED)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-
-
-
-# views/homework_views.py
-
-
-
+# === O'qituvchi uy vazifasini tekshiradi ===
 class UyVazifasiniTekshirishAPIView(APIView):
-    permission_classes = [IsTeacherOfStudentPermission,IsAuthenticated]
+    permission_classes = [IsTeacherOfStudentPermission, IsAuthenticated]  # Ruxsat kerak
 
     """
-    O'qituvchi talabalarning topshiriqlarini ko'rib chiqish
+    O'qituvchi talabalarning topshiriqlarini ko‘rib chiqadi
     """
 
     @swagger_auto_schema(
-        operation_description="Bitta uy vazifasiga topshirilgan barcha topshiriqlarni ko'rish",
+        operation_description="Bitta uy vazifasiga topshirilgan barcha topshiriqlarni ko‘rish",
         manual_parameters=[
             openapi.Parameter(
                 'homework_id',
@@ -102,16 +92,17 @@ class UyVazifasiniTekshirishAPIView(APIView):
         }
     )
     def get(self, request, homework_id):
-        topshiriqlar = Topshiriq.objects.filter(homework_id=homework_id)
+        topshiriqlar = Topshiriq.objects.filter(homework_id=homework_id)  # Homework ID bo‘yicha topshiriqlar
         if not topshiriqlar.exists():
             return Response({"xato": "Ushbu uy vazifasiga topshiriqlar topilmadi"}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = TopshirishSerializer(topshiriqlar, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+# === O'qituvchi baho qo‘yadi (PATCH) ===
 class Baholash(APIView):
     @swagger_auto_schema(
-        operation_description="Talaba topshirig'ini baholash",
+        operation_description="Talabaning topshirig‘ini baholash",
         manual_parameters=[
             openapi.Parameter(
                 'topshiriq_id',
@@ -127,12 +118,9 @@ class Baholash(APIView):
             404: "Topshiriq topilmadi"
         }
     )
-
-
-#baholaydi patch qilib
-    def patch(self, request, student_id):
+    def patch(self, request, student_id):  # E'tibor bering: parametr nomi topshiriq_id emas, student_id
         try:
-            topshiriq = Topshiriq.objects.get(student_id=student_id)
+            topshiriq = Topshiriq.objects.get(student_id=student_id)  # Student ID bo‘yicha topshiriqni olish
         except Topshiriq.DoesNotExist:
             return Response({"xato": "Topshiriq topilmadi"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -142,17 +130,12 @@ class Baholash(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-#bahoni koradi
+# === Talaba o‘z bahosini ko‘radi ===
 class BahoniKorish(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)  # Foydalanuvchi login bo‘lgan bo‘lishi kerak
+
     @swagger_auto_schema(responses={200: BaholashSerializer()})
-    def get(self,request,topshiriq_id):
-        topshiriq = Topshiriq.objects.get(id=topshiriq_id)
-        serializer=BaholashSerializer(topshiriq)
+    def get(self, request, topshiriq_id):
+        topshiriq = Topshiriq.objects.get(id=topshiriq_id)  # Topshiriqni ID bo‘yicha olish
+        serializer = BaholashSerializer(topshiriq)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-
-
-
-

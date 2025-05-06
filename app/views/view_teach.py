@@ -15,6 +15,27 @@ from drf_yasg import openapi
 
 from ..serializers.teacher_serializers import TeacherPostSerializer, TeacherSerializer, TeacherUpdateSerializer
 
+
+
+
+class Name(APIView):
+    def get(self, request):  # <-- 'name' emas, 'get' deb yozish kerak
+        data = {'name': 'Ali'}  # Lug'at bo'lishi kerak, set emas
+        return Response(data)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # TEACHER TOLIQ ISHLAYAPDI
 
 class Teacher_Api(APIView):

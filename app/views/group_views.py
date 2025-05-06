@@ -1,39 +1,47 @@
-from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status
-from app.models import GroupStudent
-from app.serializers.group_serializer import GroupSerializer
-from ..permissions import IsAdminOrTeacherLimitedEdit
+# DRFdan kerakli klasslar va modullar import qilinmoqda
+from rest_framework.viewsets import ModelViewSet  # CRUD uchun ViewSet
+from rest_framework.permissions import IsAuthenticated  # Foydalanuvchi avtorizatsiyadan o'tganini tekshirish
+from rest_framework.response import Response  # Javob qaytarish uchun
+from rest_framework import status  # Status kodlari (200, 201, 400 va boshqalar)
 
-class GroupStudentViewSet(ModelViewSet):    #GROUPGA CRUD
-    queryset = GroupStudent.objects.all().order_by('-id')
-    serializer_class = GroupSerializer
-    permission_classes = [IsAuthenticated, IsAdminOrTeacherLimitedEdit]
-#GROUP YARATISH
+# App ichidagi model va serializerlarni import qilish
+from app.models import GroupStudent  # GroupStudent modeli
+from app.serializers.group_serializer import GroupSerializer  # Group uchun serializer
+from ..permissions import IsAdminOrTeacherLimitedEdit  # Maxsus ruxsat sinfi (Admin yoki cheklangan teacher)
+
+# Guruh (GroupStudent) uchun to‘liq CRUD ViewSet (ModelViewSet asosida)
+class GroupStudentViewSet(ModelViewSet):  # GROUP uchun CRUD amallar
+    queryset = GroupStudent.objects.all().order_by('-id')  # Barcha group yozuvlarini ID bo‘yicha teskari tartibda olish
+    serializer_class = GroupSerializer  # Ushbu model uchun foydalaniladigan serializer
+    permission_classes = [IsAuthenticated, IsAdminOrTeacherLimitedEdit]  # Ruxsat: foydalanuvchi avtorizatsiyadan o'tgan bo'lishi va admin/teacher bo'lishi kerak
+
+    # GROUP YARATISH (POST metodi)
     def create(self, request, *args, **kwargs):
-        data = request.data.copy()
-        # kelyotgan malumotni stringdan listga o'tkizadi
+        data = request.data.copy()  # Yuborilgan ma’lumotni nusxalash
+
+        # Agar 'teacher' maydoni string bo‘lsa (masalan: "1,2,3") uni listga aylantirish
         if isinstance(data.get('teacher'), str):
-            data['teacher'] = [t.strip() for t in data['teacher'].split(',')]
+            data['teacher'] = [t.strip() for t in data['teacher'].split(',')]  # "1,2" → ["1", "2"]
 
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        serializer = self.get_serializer(data=data)  # Serializerga ma'lumot berish
+        serializer.is_valid(raise_exception=True)  # Validatsiya; noto‘g‘ri bo‘lsa avtomatik xatolik
+        self.perform_create(serializer)  # Ma'lumotni bazaga saqlash
+        return Response(serializer.data, status=status.HTTP_201_CREATED)  # 201 Created javobini qaytarish
 
+    # GROUP YANGILASH (PUT yoki PATCH metodi)
     def update(self, request, *args, **kwargs):
-        data = request.data.copy()
+        data = request.data.copy()  # So‘rov ma'lumotlarini nusxalash
 
+        # Teacher maydoni string bo‘lsa, listga o‘tkazish
         if isinstance(data.get('teacher'), str):
             data['teacher'] = [t.strip() for t in data['teacher'].split(',')]
 
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response(serializer.data)
+        partial = kwargs.pop('partial', False)  # PATCH bo‘lsa qisman yangilash
+        instance = self.get_object()  # Yangilanayotgan obyektni olish
+        serializer = self.get_serializer(instance, data=data, partial=partial)  # Serializerga yangi ma’lumotni berish
+        serializer.is_valid(raise_exception=True)  # Validatsiya qilish
+        self.perform_update(serializer)  # Obyektni yangilash
+        return Response(serializer.data)  # Muvaffaqiyatli javob qaytarish
 
 
 
